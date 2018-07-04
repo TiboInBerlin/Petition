@@ -35,7 +35,7 @@ app.post("/", (req, res) => {
 });
 
 app.get("/thanks", (req, res) => {
-    res.send("<h1>Thanks</h1>");
+    res.send("<h1>Cheers! BASE jumping is the future!</h1>");
 });
 
 app.listen(8080, () => {
