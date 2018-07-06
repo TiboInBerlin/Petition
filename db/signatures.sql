@@ -1,10 +1,14 @@
 ---never us capital letters in sql files!
 
+DROP TABLE IF EXISTS signatures;
+
 CREATE TABLE signatures(
 id SERIAL PRIMARY KEY, ---serial to make it start from 1
+user_id INTEGER NOT NULL,
 first_name VARCHAR(50) NOT NULL,
 last_name VARCHAR(50) NOT NULL,
-signature TEXT NOT NULL
+signature TEXT NOT NULL,
+create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- INSTRUCTIONS: in command line:
