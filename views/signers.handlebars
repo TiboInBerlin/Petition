@@ -1,17 +1,16 @@
 <h1>This is the list of signers</h1>
 
 <h2>Total signers: {{length}}</h2>
-<div class="signers-wrap">
-  <div class="list-signers">
-    <div class="table-header1">
-      Name
-    </div>
-    <div class="table-header2">
-      Date
-    </div>
-    {{#content}}
-    <div class="signers">{{first_name}} {{last_name}}</div>
-    <div class="date-signature">{{date_signature}}</div>
-    {{/content}}
-  </div>
-</div>
+
+    <ul>
+{{#each content}}
+{{#if url}}
+{{#if city}}
+    <li><a href="{{this.url}}">{{this.first_name}} {{this.last_name}}</a>  {{this.age}} <a href="{{this.city}}">{{this.city}}</a></li>
+{{/if}}
+{{/if}}
+{{else}}
+<li>{{this.first_name}} {{this.last_name}}  {{this.age}} {{this.city}} {{this.url}}</li>
+{{/each}}
+
+</ul>

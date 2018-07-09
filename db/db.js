@@ -6,7 +6,9 @@ var db = spicedPg(
 
 exports.getSigners = function() {
     db
-        .query("SELECT * FROM signatures;") //dbquery returns a promise
+        .query(
+            "SELECT users.first_name AS first_name,users.last_name AS last_name,user_profiles.age AS age,user_profiles.city AS city,user_profiles.url AS url FROM signatures JOIN users ON users.id = signatures.user_id LEFT JOIN user_profiles ON signatures.user_id = user_profiles.user_id"
+        ) //dbquery returns a promise
         .then(results => {
             console.log(results.rows);
         });
@@ -25,13 +27,13 @@ SELECT signature FROM signatures WHERE id = $1;
     });
 };
 
-exports.insertSignature = function(userId, firstname, lastname, signature) {
+exports.insertSignature = function(userId, signature) {
     const q = `
-INSERT INTO signatures (user_id, first_name, last_name, signature)
-VALUES($1, $2, $3, $4) RETURNING *
+INSERT INTO signatures (user_id, signature)
+VALUES($1, $2) RETURNING *
 `;
     // we use `` in order to create multiple lines
-    const params = [userId, firstname, lastname, signature];
+    const params = [userId, signature];
 
     return db.query(q, params).then(results => {
         return results.rows[0];
@@ -40,7 +42,8 @@ VALUES($1, $2, $3, $4) RETURNING *
 };
 
 exports.returnUsers = function() {
-    const q = `SELECT * FROM signatures;`;
+    const q = `SELECT users.first_name,users.last_name,user_profiles.age,user_profiles.city,user_profiles.url FROM signatures JOIN users ON users.id = signatures.user_id LEFT JOIN user_profiles ON signatures.user_id = user_profiles.user_id`;
+    //const q = `SELECT * FROM signatures;`;
     return db.query(q).then(results => {
         return results.rows;
     });
@@ -59,9 +62,26 @@ VALUES($1, $2, $3, $4) RETURNING *
 };
 //we create this function to check the Email that the user wrote and we see if we have it our table, and if yes we return the whole array of the corresponding row.
 exports.getEmail = function(email) {
-    const q = `SELECT email,hashed_password FROM users WHERE email= $1;`;
+    const q = `SELECT id,email,hashed_password FROM users WHERE email= $1;`;
     const params = [email];
     return db.query(q, params).then(results => {
-        return results.rows[0];
+        return results.rows;
     });
+};
+
+exports.insertProfile = function(userId, age, city, url) {
+    const q = `
+INSERT INTO user_profiles (user_id, age, city, url)
+VALUES($1, $2, $3, $4) RETURNING *
+`;
+    const params = [userId, age, city, url];
+
+    return db
+        .query(q, params)
+        .then(results => {
+            return results.rows[0];
+        })
+        .catch(err => {
+            console.log("insertProfile Sql Error is:" + err);
+        });
 };

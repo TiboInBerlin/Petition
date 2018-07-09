@@ -49,12 +49,12 @@ app.post("/home", (req, res) => {
         db
             .insertSignature(
                 req.session.userId,
-                req.session.firstname,
-                req.session.lastname,
+                //req.session.firstname,
+                //req.session.lastname,
                 req.body.hidden
             )
             //what did we do on line above? we are taking the data from the session that we created in this page in post/register
-            .then((signature) => {
+            .then(signature => {
                 //res.json(newUser);
                 req.session.signatureId = signature.id;
                 //console.log(newUser);
@@ -134,6 +134,7 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
+    var userInfo; //We create this variable in order to link it with the variabke results in our getEmail function.
     //we will use the body parser to get the values of the form of the body
     if (req.body.email == "" || req.body.password == "") {
         res.redirect("/login"); // if the user has one empty field, we redirect user to register page
@@ -143,12 +144,19 @@ app.post("/login", (req, res) => {
             if (results.length == 0) {
                 res.redirect("/login");
             } else {
-                const hashedPwd = results.hashed_password; //result is an array and hashed password is the fifth element of this array
+                userInfo = results[0];
+                const hashedPwd = userInfo.hashed_password; //result is an array and hashed password is the fifth element of this array
                 bcrypt
                     .checkPassword(req.body.password, hashedPwd)
                     .then(checked => {
                         if (checked) {
                             console.log(checked);
+                            req.session.userId = userInfo.id;
+                            req.session.firstname = userInfo.firstname;
+                            req.session.lastname = userInfo.lastname;
+                            req.session.email = userInfo.email;
+                            req.session.hashedPassword = hashedPwd;
+                            res.redirect("/home");
                         } else {
                             res.redirect("/login");
                         }
@@ -158,7 +166,27 @@ app.post("/login", (req, res) => {
     }
 });
 
-//function to link the two sql tables signatures and users:
+app.get("/profile", (req, res) => {
+    res.render("profile");
+});
+
+app.post("/profile", (req, res) => {
+    if (req.body.age == "" && req.body.city == "" && req.body.url == "") {
+        res.redirect("/home"); // if the user has one empty field, we redirect user to register page
+    } else {
+        //we will have to add here all the new information that the users gave.
+        db
+            .insertProfile(
+                req.session.userId,
+                req.body.age,
+                req.body.city,
+                req.body.url
+            )
+            .then(() => {
+                res.redirect("/home");
+            });
+    }
+});
 
 app.listen(8080, () => {
     console.log("listening on port 8080...");
