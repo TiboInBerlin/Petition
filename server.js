@@ -28,11 +28,15 @@ app.use(
 app.set("view engine", "handlebars");
 
 app.get("/home", (req, res) => {
+    if(!req.session.loggedIn){
+        res.redirect("/login");
+    } else{
+        res.render("home", {
+            //remember: res.render is for template
+            layout: "main"
+        });
+    }
     //db.getSigners()
-    res.render("home", {
-        //remember: res.render is for template
-        layout: "main"
-    });
 });
 
 app.post("/home", (req, res) => {
@@ -64,33 +68,39 @@ app.post("/home", (req, res) => {
 });
 
 app.get("/signed", (req, res) => {
-    //res.send("<h1>Cheers! BASE jumping is the future!</h1>");
-    //res.sendfile("base");
-    db.getSignature(req.session.signatureId).then(sign => {
-        console.log(sign.signature);
-        res.render("signed", {
-            signature: sign.signature
+    if(!req.session.loggedIn){
+        res.redirect("/login");
+    } else{
+        db.getSignature(req.session.signatureId).then(sign => {
+            console.log(sign.signature);
+            res.render("signed", {
+                signature: sign.signature
+            });
         });
-    });
+    }
     //res.json(sign);
     //res.render("signed");
 });
 
 app.get("/signers", (req, res) => {
-    db.returnUsers().then(allUsers => {
-        res.render("signers", {
-            layout: "main",
-            content: allUsers,
-            length: allUsers.length
+    if(!req.session.loggedIn){
+        res.redirect("/login");
+    }else {
+        db.returnUsers().then(allUsers => {
+            res.render("signers", {
+                layout: "main",
+                content: allUsers,
+                length: allUsers.length
+            });
         });
-    });
+    }
 });
 
-app.get("/register", (req, res) => {
+app.get("/", (req, res) => {
     res.render("register"); // when the user type "/register", user will be redirected to the register view
 });
 
-app.post("/register", (req, res) => {
+app.post("/", (req, res) => {
     //we will use the body parser to get the values of the form of the body
     if (
         req.body.firstname == "" ||
@@ -98,7 +108,7 @@ app.post("/register", (req, res) => {
         req.body.email == "" ||
         req.body.password == ""
     ) {
-        res.redirect("/register"); // if the user has one empty field, we redirect user to register page
+        res.redirect("/"); // if the user has one empty field, we redirect user to register page
     } else {
         //first we have to do is hashing the password of the user
         //we access the hashPassword function from bscrypt file and we use .then since the function was promisified in bsrypt.js
@@ -120,7 +130,8 @@ app.post("/register", (req, res) => {
                         req.session.lastname = req.body.lastname;
                         req.session.email = req.body.email;
                         req.session.hashedPassword = hashedPassword;
-                        res.redirect("/home");
+                        req.session.loggedIn = true;
+                        res.redirect("/profile");
                     });
             })
             .catch(err => {
@@ -130,7 +141,12 @@ app.post("/register", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
+    if(!req.session.loggedIn){
+    res.redirect("/login");
+}else{
     res.render("login");
+}
+
 });
 
 app.post("/login", (req, res) => {
@@ -156,7 +172,8 @@ app.post("/login", (req, res) => {
                             req.session.lastname = userInfo.lastname;
                             req.session.email = userInfo.email;
                             req.session.hashedPassword = hashedPwd;
-                            res.redirect("/home");
+                            req.session.loggedIn = true;
+                            res.redirect("/signed");
                         } else {
                             res.redirect("/login");
                         }
@@ -167,7 +184,12 @@ app.post("/login", (req, res) => {
 });
 
 app.get("/profile", (req, res) => {
-    res.render("profile");
+    if (req.session.loggedIn){ //We write this in order to check that the user is well logged in! we did that for all pages!
+        res.render("profile");
+    } else {
+        res.redirect("/");
+    }
+
 });
 
 app.post("/profile", (req, res) => {
