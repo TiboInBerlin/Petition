@@ -146,3 +146,17 @@ exports.updateUserProfile = function(userId, age, city, url) {
             console.log("updating user Sql Error is:" + err);
         });
 };
+
+exports.deleteSignature = function(userId) {
+    const q = `DELETE FROM signatures WHERE user_id = $1;`;
+    const params = [userId];
+
+    return db
+        .query(q, params)
+        .then(results => {
+            return results.rows[0];
+        })
+        .catch(err => {
+            console.log("Deleting signature Sql Error is:" + err);
+        });
+};

@@ -326,6 +326,12 @@ app.post("/profile/edit", (req, res) => {
     }
 });
 
+app.get('/deleteSignature',(req,res)=>{
+    db.deleteSignature(req.session.userId).then(()=>{
+        res.redirect('/home');
+    })
+})
+
 app.listen(8080, () => {
     console.log("listening on port 8080...");
 });
