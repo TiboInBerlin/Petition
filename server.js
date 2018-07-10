@@ -28,9 +28,9 @@ app.use(
 app.set("view engine", "handlebars");
 
 app.get("/home", (req, res) => {
-    if(!req.session.loggedIn){
+    if (!req.session.loggedIn) {
         res.redirect("/login");
-    } else{
+    } else {
         res.render("home", {
             //remember: res.render is for template
             layout: "main"
@@ -68,9 +68,9 @@ app.post("/home", (req, res) => {
 });
 
 app.get("/signed", (req, res) => {
-    if(!req.session.loggedIn){
+    if (!req.session.loggedIn) {
         res.redirect("/login");
-    } else{
+    } else {
         db.getSignature(req.session.signatureId).then(sign => {
             console.log(sign.signature);
             res.render("signed", {
@@ -83,9 +83,9 @@ app.get("/signed", (req, res) => {
 });
 
 app.get("/signers", (req, res) => {
-    if(!req.session.loggedIn){
+    if (!req.session.loggedIn) {
         res.redirect("/login");
-    }else {
+    } else {
         db.returnUsers().then(allUsers => {
             res.render("signers", {
                 layout: "main",
@@ -141,12 +141,11 @@ app.post("/", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-    if(!req.session.loggedIn){
-    res.redirect("/login");
-}else{
-    res.render("login");
-}
-
+    if (!req.session.loggedIn) {
+        res.redirect("/login");
+    } else {
+        res.render("login");
+    }
 });
 
 app.post("/login", (req, res) => {
@@ -184,12 +183,12 @@ app.post("/login", (req, res) => {
 });
 
 app.get("/profile", (req, res) => {
-    if (req.session.loggedIn){ //We write this in order to check that the user is well logged in! we did that for all pages!
+    if (req.session.loggedIn) {
+        //We write this in order to check that the user is well logged in! we did that for all pages!
         res.render("profile");
     } else {
         res.redirect("/");
     }
-
 });
 
 app.post("/profile", (req, res) => {
@@ -207,6 +206,123 @@ app.post("/profile", (req, res) => {
             .then(() => {
                 res.redirect("/home");
             });
+    }
+});
+
+app.get("/signers/:cityName", (req, res) => {
+    //we use : in order to make a dynamic link so that we store each different city in a different page.
+    var cityName = req.params.cityName; //I use this to make a query to database
+    db.getSignersByCityName(cityName).then(citySigners => {
+        res.render("city", {
+            content: citySigners
+        });
+    });
+});
+
+app.get("/profile/edit", (req, res) => {
+    db.getUserInfo(req.session.userId).then(results => {
+        //we put here all the data of the users in our different fields (because placeholder is not a solution) and we do that before the render
+        req.session.firstname = results.first_name;
+        req.session.lastname = results.last_name;
+        req.session.email = results.email;
+        req.session.hashedPassword = results.hashed_password;
+        req.session.age = results.age;
+        req.session.city = results.city;
+        req.session.url = results.url;
+        res.render("edit", {
+            userData: results
+        });
+    });
+});
+
+app.post("/profile/edit", (req, res) => {
+    if (
+        //these names have to be the same as the names in our edit handlebars
+        req.body.firstname == "" &&
+        req.body.lastname == "" &&
+        req.body.email == "" &&
+        req.body.password == "" &&
+        req.body.age == "" &&
+        req.body.city == "" &&
+        req.body.url == ""
+    ) {
+        res.redirect("/signers");
+    } else {
+        if (!req.body.firstname == "") {
+            req.session.firstname = req.body.firstname;
+        }
+        if (!req.body.lastname == "") {
+            req.session.lastname = req.body.lastname;
+        }
+        if (!req.body.email == "") {
+            req.session.email = req.body.email;
+        }
+        if (!req.body.age == "") {
+            req.session.age = req.body.age;
+        }
+        if (!req.body.city == "") {
+            req.session.city = req.body.city;
+        }
+        if (!req.body.url == "") {
+            req.session.url = req.body.url;
+        }
+        if (!req.body.password == "") {
+            //we hash the new password of the user: the variable result represents here the hashed password
+            bcrypt
+                .hashPassword(req.body.password)
+                .then(result => {
+                    //... and we add this hashed pwd to the result!
+                    req.session.hashedPassword = result;
+                    //problem: the function hashPassword is asynchronous. so we insert a then here:
+                })
+                .then(() => {
+                    db
+                        .updateUsers(
+                            req.session.userId,
+                            req.session.firstname,
+                            req.session.lastname,
+                            req.session.email,
+                            req.session.hashedPassword
+                        )
+                        //we insert here a then because we write two functions for two different tables.
+                        .then(() => {
+                            db
+                                .updateUserProfile(
+                                    req.session.userId,
+                                    req.session.age,
+                                    req.session.city,
+                                    req.session.url
+                                )
+                                .then(() => {
+                                    //we wil redirect the user to the edit page so that he can see his new data
+                                    res.redirect("/profile/edit");
+                                });
+                        });
+                });
+        } else {
+            //we create a else because in case the user did not change the password, we do not have any problem of asynchronousity and do not need any fucking then!
+            db
+                .updateUsers(
+                    req.session.userId,
+                    req.session.firstname,
+                    req.session.lastname,
+                    req.session.email,
+                    req.session.hashedPassword
+                )
+                .then(() => {
+                    db
+                        .updateUserProfile(
+                            req.session.userId,
+                            req.session.age,
+                            req.session.city,
+                            req.session.url
+                        )
+                        .then(() => {
+                            //we wil redirect the user to the edit page so that he can see his new data
+                            res.redirect("/profile/edit");
+                        });
+                });
+        }
     }
 });
 
